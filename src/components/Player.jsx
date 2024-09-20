@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 
 export default function Player() {
-  const playerName = useRef();
+  const playerName = useRef(); // used as on click it will reset if used state
   const [enteredPlayerName, setEnteredPlayerName] = useState("");
 
   function handleClick(event) {
