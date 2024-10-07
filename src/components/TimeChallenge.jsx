@@ -7,45 +7,51 @@ export default function TimeChallenge({ title, targetTime, playerName }) {
 
   const [timerStarted, setTimerStarted] = useState(false);
   const [timerExpired, setTimerExpired] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(targetTime);
+  const [remainingTime, setRemainingTime] = useState(targetTime * 1000); // convert targetTime to milliseconds
   const [winner, setWinner] = useState(null);
-  const [timeStopped, setTimeStopped] = useState(false); // New state for checking if the timer was stopped early
+  const [timeStopped, setTimeStopped] = useState(false);
+  const [showLossMessage, setShowLossMessage] = useState(false);
 
   useEffect(() => {
-    if (timerStarted && remainingTime > -0.1) {
+    if (timerStarted && remainingTime > 0) {
       const intervalId = setInterval(() => {
-        setRemainingTime((prevTime) => prevTime - 1);
-      }, 1000);
+        setRemainingTime((prevTime) => prevTime - 10); // Decrease every 10ms
+      }, 10); // Update the timer every 10 milliseconds
 
       return () => clearInterval(intervalId);
     }
 
-    if (remainingTime === 0) {
+    if (remainingTime <= 0 && timerStarted) {
+      // Timer expired
       setTimerExpired(true);
-      dialog.current.open();
-      setWinner(playerName); // Declare the player as the winner when time reaches 0
       setTimerStarted(false);
+      setRemainingTime(0); // Ensure it's set to exactly 0
+      setWinner(playerName);
+
+      // Delay the loss message appearance
+      setTimeout(() => {
+        setShowLossMessage(true);
+        dialog.current.open();
+      }, 500); // Show loss message after 0.5 seconds
     }
   }, [timerStarted, remainingTime, playerName]);
 
   function handleStart() {
     if (!timerStarted) {
       setTimerStarted(true);
-      setRemainingTime(targetTime);
+      setRemainingTime(targetTime * 1000); // Reset the timer to the target time (in milliseconds)
       setTimerExpired(false);
-      setTimeStopped(false); // Reset when restarting the timer
+      setTimeStopped(false);
+      setShowLossMessage(false);
     }
   }
 
   function handleStop() {
     if (timerStarted) {
-      if (remainingTime === 0) {
-        setWinner(playerName); // Declare winner if the timer reaches 0
-      } else {
-        setTimeStopped(true); // Mark as stopped before the time reached 0
-      }
+      clearTimeout(timer.current);
       setTimerStarted(false);
-      dialog.current.open(); // Open the modal when stopping
+      setTimeStopped(true);
+      dialog.current.open();
     }
   }
 
@@ -57,13 +63,13 @@ export default function TimeChallenge({ title, targetTime, playerName }) {
         remainingTime={remainingTime}
         result={timerExpired ? "lost" : "stopped"}
         winner={winner}
-        timeStopped={timeStopped} // Pass whether the timer was stopped early
+        timeStopped={timeStopped}
       />
       <section className="challenge">
         <h2>{title}</h2>
-        {timerExpired && <p>You lost</p>}
+        {showLossMessage && <p>You lost</p>}
         <p className="challenge-time">
-          {remainingTime} second{remainingTime !== 1 ? "s" : ""}
+          {remainingTime / 1000} second{remainingTime !== 1000 ? "s" : ""} ({remainingTime} milliseconds)
         </p>
         <p>
           <button onClick={timerStarted ? handleStop : handleStart}>
